@@ -1,0 +1,47 @@
+From 0e232e29765cade22b9e8cba3b0c372eb4db58f9 Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Wed, 30 Jun 2010 21:55:59 -0400
+Subject: [PATCH] [details] detach from event loop when quitting
+
+If the user has the details plugin configured, and the
+system does plymouth quit --retain-splash, then their
+may be a crash.
+
+This is because the plugin event loop exit handler will called
+after the plugin is destroyed.  This commit makes sure
+the exit handler is removed before the plugin is freed.
+---
+ src/plugins/splash/details/plugin.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/src/plugins/splash/details/plugin.c b/src/plugins/splash/details/plugin.c
+index fd8d2b8..763e128 100644
+--- a/src/plugins/splash/details/plugin.c
++++ b/src/plugins/splash/details/plugin.c
+@@ -67,6 +67,8 @@ typedef struct
+ } view_t;
+ 
+ ply_boot_splash_plugin_interface_t *ply_boot_splash_plugin_get_interface (void);
++static void detach_from_event_loop (ply_boot_splash_plugin_t *plugin);
++
+ struct _ply_boot_splash_plugin
+ {
+   ply_event_loop_t *loop;
+@@ -141,6 +143,14 @@ destroy_plugin (ply_boot_splash_plugin_t *plugin)
+   if (plugin == NULL)
+     return;
+ 
++  if (plugin->loop != NULL)
++    {
++      ply_event_loop_stop_watching_for_exit (plugin->loop, (ply_event_loop_exit_handler_t)
++                                             detach_from_event_loop,
++                                             plugin);
++      detach_from_event_loop (plugin);
++    }
++
+   free_views (plugin);
+ 
+   free (plugin);
+-- 
+1.7.1
+

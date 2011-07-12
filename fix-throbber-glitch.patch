@@ -1,0 +1,29 @@
+From efe9f3967264ae991f9b64b28bd44bb40c40c696 Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Thu, 17 Jun 2010 16:11:42 -0400
+Subject: [PATCH] [throbber] fix drawing artifact
+
+The code was using the wrong x and y values, which meant initially
+there is an opportunity to draw a frame in the wrong place.
+---
+ src/libply-splash-graphics/ply-throbber.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/libply-splash-graphics/ply-throbber.c b/src/libply-splash-graphics/ply-throbber.c
+index 45638b7..8dbc1c3 100644
+--- a/src/libply-splash-graphics/ply-throbber.c
++++ b/src/libply-splash-graphics/ply-throbber.c
+@@ -381,8 +381,8 @@ ply_throbber_draw_area (ply_throbber_t     *throbber,
+   frames = (ply_image_t * const *) ply_array_get_elements (throbber->frames);
+   ply_pixel_buffer_fill_with_buffer (buffer,
+                                      frames[throbber->frame_number],
+-                                     throbber->frame_area.x,
+-                                     throbber->frame_area.y);
++                                     throbber->x,
++                                     throbber->y);
+ }
+ 
+ long
+-- 
+1.6.5.2
+

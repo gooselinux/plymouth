@@ -1,0 +1,38 @@
+From 6e09dd50ea569a881ebb1fe761849dcc4f12f9f0 Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Wed, 30 Jun 2010 09:12:24 -0400
+Subject: [PATCH] [viewer] make boot messages show up in monospace
+
+They're sort of designed for it, and look weird in some cases,
+otherwise.
+---
+ src/viewer/plymouth-log-viewer.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/src/viewer/plymouth-log-viewer.c b/src/viewer/plymouth-log-viewer.c
+index 461e8ff..3bfa13e 100644
+--- a/src/viewer/plymouth-log-viewer.c
++++ b/src/viewer/plymouth-log-viewer.c
+@@ -224,6 +224,7 @@ create_window (GtkTextBuffer *buffer)
+   GtkWidget *terminal;
+   GtkWidget *bbox;
+   GtkWidget *close_button;
++  PangoFontDescription *description;
+   PangoTabArray *tabs;
+   int width, height;
+ 
+@@ -244,6 +245,11 @@ create_window (GtkTextBuffer *buffer)
+                                        GTK_SHADOW_IN);
+   terminal = gtk_text_view_new_with_buffer (buffer);
+   gtk_text_view_set_editable (GTK_TEXT_VIEW (terminal), FALSE);
++
++  description = pango_font_description_from_string ("monospace");
++  gtk_widget_modify_font (terminal, description);
++  pango_font_description_free (description);
++
+   tabs = pango_tab_array_new_with_positions (1, TRUE, PANGO_TAB_LEFT, width - 130);
+   gtk_text_view_set_tabs (GTK_TEXT_VIEW (terminal), tabs);
+   gtk_text_view_set_left_margin (GTK_TEXT_VIEW (terminal), 12);
+-- 
+1.6.5.2
+

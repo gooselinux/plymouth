@@ -1,0 +1,13 @@
+diff -up plymouth-0.8.3/src/libply-splash-core/ply-terminal.c.tty-fix plymouth-0.8.3/src/libply-splash-core/ply-terminal.c
+--- plymouth-0.8.3/src/libply-splash-core/ply-terminal.c.tty-fix	2010-04-29 13:21:54.000000000 -0400
++++ plymouth-0.8.3/src/libply-splash-core/ply-terminal.c	2010-05-07 14:50:49.505971565 -0400
+@@ -188,7 +188,8 @@ ply_terminal_set_unbuffered_input (ply_t
+   if (tcsetattr (terminal->fd, TCSANOW, &term_attributes) != 0)
+     return false;
+ 
+-  if (ioctl (terminal->fd, TIOCGLCKTRMIOS, &locked_term_attributes) == 0)
++  if (!terminal->original_locked_term_attributes_saved &&
++      ioctl (terminal->fd, TIOCGLCKTRMIOS, &locked_term_attributes) == 0)
+     {
+       terminal->original_locked_term_attributes = locked_term_attributes;
+       terminal->original_locked_term_attributes_saved = true;

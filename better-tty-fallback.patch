@@ -1,0 +1,134 @@
+From 56e6e7d0b9ab156957b535e4ec272ebc6d683742 Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Wed, 30 Jun 2010 20:32:53 -0400
+Subject: [PATCH 3/3] [main] try more aggressively to find a terminal
+
+Before we defaulted to tty1, but some systems just
+don't have tty1.  Normally, those systems specify
+an alternate console on the kernel command line,
+but not always.
+
+This commit tries to make things work in those cases
+as well.
+
+I'd like to find a more generic way to make this all
+work.
+---
+ src/libply/ply-utils.c |   11 +++++++++++
+ src/libply/ply-utils.h |    1 +
+ src/main.c             |   37 ++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 48 insertions(+), 1 deletions(-)
+
+diff --git a/src/libply/ply-utils.c b/src/libply/ply-utils.c
+index cbc6473..95e5918 100644
+--- a/src/libply/ply-utils.c
++++ b/src/libply/ply-utils.c
+@@ -632,6 +632,17 @@ ply_file_exists (const char *file)
+   return S_ISREG (file_info.st_mode);
+ }
+ 
++bool
++ply_character_device_exists (const char *device)
++{
++  struct stat file_info;
++
++  if (stat (device, &file_info) < 0)
++    return false;
++
++  return S_ISCHR (file_info.st_mode);
++}
++
+ void 
+ ply_list_directory (const char *path)
+ {
+diff --git a/src/libply/ply-utils.h b/src/libply/ply-utils.h
+index 712b869..5d6e66d 100644
+--- a/src/libply/ply-utils.h
++++ b/src/libply/ply-utils.h
+@@ -86,6 +86,7 @@ void ply_restore_errno (void);
+ 
+ bool ply_directory_exists (const char *dir);
+ bool ply_file_exists (const char *file);
++bool ply_character_device_exists (const char *device);
+ void ply_list_directory (const char *dir);
+ 
+ ply_module_handle_t *ply_open_module (const char *module_path);
+diff --git a/src/main.c b/src/main.c
+index cbb6541..9983ae4 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -109,6 +109,7 @@ typedef struct
+   uint32_t should_be_attached : 1;
+   uint32_t should_retain_splash : 1;
+   uint32_t is_inactive : 1;
++  uint32_t should_force_details : 1;
+ 
+   char *kernel_console_tty;
+   char *override_splash_path;
+@@ -629,7 +630,7 @@ plymouth_should_show_default_splash (state_t *state)
+   };
+   int i;
+ 
+-  if (state->kernel_console_tty != NULL)
++  if (state->should_force_details)
+     return false;
+ 
+   for (i = 0; strings[i] != NULL; i++)
+@@ -1629,6 +1630,8 @@ check_for_consoles (state_t    *state,
+       char *end;
+       ply_trace ("serial console found!");
+ 
++      state->should_force_details = true;
++
+       free (state->kernel_console_tty);
+       state->kernel_console_tty = strdup (console_key + strlen (" console="));
+ 
+@@ -1686,6 +1689,28 @@ redirect_standard_io_to_device (const char *device)
+ 
+   return true;
+ }
++static const char *
++find_fallback_tty (state_t *state)
++{
++  static const char *tty_list[] =
++    {
++      "/dev/ttyS0",
++      "/dev/hvc0",
++      "/dev/xvc0",
++      "/dev/ttySG0",
++      "/dev/tty0",
++      NULL
++    };
++  int i;
++
++  for (i = 0; tty_list[i] != NULL; i++)
++    {
++      if (ply_character_device_exists (tty_list[i]))
++        return tty_list[i];
++    }
++
++  return state->default_tty;
++}
+ 
+ static bool
+ initialize_environment (state_t *state)
+@@ -1714,6 +1739,16 @@ initialize_environment (state_t *state)
+         }
+       else
+         state->default_tty = BOOT_TTY;
++
++      ply_trace ("checking if '%s' exists", state->default_tty);
++      if (!ply_character_device_exists (state->default_tty))
++        {
++          ply_trace ("nope, forcing details mode");
++          state->should_force_details = true;
++
++          state->default_tty = find_fallback_tty (state);
++          ply_trace ("going to go with '%s'", state->default_tty);
++        }
+     }
+ 
+   check_for_consoles (state, state->default_tty, false);
+-- 
+1.6.5.2
+

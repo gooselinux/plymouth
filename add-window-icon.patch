@@ -1,0 +1,29 @@
+From d86ad3fc46726f19931197f96936cf9a361eff9b Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Wed, 30 Jun 2010 09:00:05 -0400
+Subject: [PATCH] [viewer] add window icon
+
+Before it was showing up as an ugly generic icon.
+---
+ src/viewer/plymouth-log-viewer.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/src/viewer/plymouth-log-viewer.c b/src/viewer/plymouth-log-viewer.c
+index ca4d498..461e8ff 100644
+--- a/src/viewer/plymouth-log-viewer.c
++++ b/src/viewer/plymouth-log-viewer.c
+@@ -305,6 +305,11 @@ main (int argc, char *argv[])
+ 
+   window = create_window (buffer);
+ 
++  if (seen_errors == 2)
++    gtk_window_set_icon_name (GTK_WINDOW (window), GTK_STOCK_DIALOG_WARNING);
++  else
++    gtk_window_set_icon_name (GTK_WINDOW (window), GTK_STOCK_INFO);
++
+   if (show_icon)
+     {
+       menu = gtk_menu_new ();
+-- 
+1.6.5.2
+

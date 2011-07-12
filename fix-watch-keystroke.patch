@@ -1,0 +1,45 @@
+From 3875c30854b4e2aa1d23b077609c8b088f85110a Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Wed, 30 Jun 2010 16:04:14 -0400
+Subject: [PATCH] [client] Fix watch-keystroke cancellation
+
+If someone calls --ignore-keystroke then
+the watch-keystroke command shouldn't get
+run and the exit code should be different
+than if it does get run.
+---
+ src/client/plymouth.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/src/client/plymouth.c b/src/client/plymouth.c
+index f454a21..ab6f2a9 100644
+--- a/src/client/plymouth.c
++++ b/src/client/plymouth.c
+@@ -363,6 +363,13 @@ on_key_answer (key_answer_state_t *answer_state,
+                const char         *answer,
+                ply_boot_client_t  *client)
+ {
++
++  if (answer == NULL)
++    {
++      ply_event_loop_exit (answer_state->state->loop, 1);
++      return;
++    }
++
+   if (answer_state->command != NULL)
+     {
+       answer_via_command (answer_state->command, answer, NULL);
+@@ -373,9 +380,7 @@ on_key_answer (key_answer_state_t *answer_state,
+         write (STDOUT_FILENO, answer, strlen (answer));
+     }
+ 
+-  if (answer != NULL)
+-    ply_event_loop_exit (answer_state->state->loop, 0);
+-  ply_event_loop_exit (answer_state->state->loop, 1);
++  ply_event_loop_exit (answer_state->state->loop, 0);
+ }
+ 
+ static void
+-- 
+1.6.5.2
+
